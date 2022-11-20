@@ -40,3 +40,5 @@ docker-compose restart backend
 4. Access your created site address with the following default admin, username: `Administrator`, password: `admin` (or as you set before)
 
 5. Finish your initial setup wizard, and you're ready to explore ERPNext.
+
+PS: This docker config doesn't include proxy (Traefik), since it was meant for testing and learning only. I will add a docker-compose production config later in the future.
