@@ -1,0 +1,141 @@
+x-erpnext-backend-image: &erpnext_backend_image
+  depends_on:
+    configurator:
+      condition: service_completed_successfully
+  image: frappe/erpnext-worker:${ERPNEXT_VERSION}
+  volumes:
+    - sites:/home/frappe/frappe-bench/sites
+    - assets:/home/frappe/frappe-bench/sites/assets:ro
+    
+name: frappe_docker
+services:
+  backend:
+    <<: *erpnext_backend_image
+    restart: on-failure
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  configurator:
+    <<: *erpnext_backend_image
+    restart: on-failure
+    command:
+    - configure.py
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis:6379/0
+      REDIS_QUEUE: redis:6379/1
+      REDIS_SOCKETIO: redis:6379/2
+      SOCKETIO_PORT: "9000"
+
+  db:
+    command:
+    - --character-set-server=utf8mb4
+    - --collation-server=utf8mb4_unicode_ci
+    - --skip-character-set-client-handshake
+    - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?No db password set}
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - mysqladmin ping -h localhost --password=${DB_PASSWORD}
+      interval: 1s
+      retries: 15
+    image: mariadb:10.6
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: db-data
+      target: /var/lib/mysql
+      volume: {}
+  frontend:
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      websocket:
+        condition: service_started
+    environment:
+      BACKEND: backend:8000
+      FRAPPE_SITE_NAME_HEADER: 127.0.0.1
+      SOCKETIO: websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+    image: frappe/erpnext-nginx:${ERPNEXT_VERSION}
+    networks:
+      default: null
+    ports:
+    - mode: ingress
+      target: 8080
+      published: "8081"
+      protocol: tcp
+    volumes:
+    - type: volume
+      source: assets
+      target: /usr/share/nginx/html/assets
+      volume: {}
+    - type: volume
+      source: sites
+      target: /usr/share/nginx/html/sites
+      volume: {}
+  
+  redis:
+    image: redis:6.2-alpine
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: redis-data
+      target: /data
+      volume: {}
+  
+  websocket:
+    <<: *erpnext_backend_image
+    restart: unless-stopped
+    image: frappe/frappe-socketio:${FRAPPE_VERSION}
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+
+  queue-short:
+    <<: *erpnext_backend_image
+    restart: unless-stopped
+    command: bench worker --queue short
+
+  queue-default:
+    <<: *erpnext_backend_image
+    restart: unless-stopped
+    command: bench worker --queue default
+
+  queue-long:
+    <<: *erpnext_backend_image
+    restart: unless-stopped
+    command: bench worker --queue long
+
+  scheduler:
+    <<: *erpnext_backend_image
+    restart: unless-stopped
+    command: bench schedule
+
+networks:
+  default:
+    name: frappe_docker_default
+volumes:
+  assets:
+    name: frappe_docker_assets
+  db-data:
+    name: frappe_docker_db-data
+  redis-data:
+    name: frappe_docker_redis-data
+  sites:
+    name: frappe_docker_sites
