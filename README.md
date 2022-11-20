@@ -9,6 +9,8 @@ Compared to other Open-Source ERP project, ERPNExt is much simpler and interacti
 
 [Read more about ERPNext](https://github.com/frappe/erpnext)
 
+If you want to read more about ERPNExt Docker Compose, you check it our [here](https://github.com/frappe/frappe_docker)
+
 ### Requirements:
 - Docker
 - Docker compose
