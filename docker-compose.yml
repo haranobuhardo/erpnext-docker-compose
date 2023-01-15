@@ -66,9 +66,9 @@ services:
         condition: service_started
     environment:
       BACKEND: backend:8000
-      FRAPPE_SITE_NAME_HEADER: 127.0.0.1
+      FRAPPE_SITE_NAME_HEADER: localhost
       SOCKETIO: websocket:9000
-      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_ADDRESS: localhost
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
     image: frappe/erpnext-nginx:${ERPNEXT_VERSION}
