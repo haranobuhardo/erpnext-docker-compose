@@ -30,7 +30,7 @@ docker-compose up -d
 # change 
 docker-compose exec backend \
     bench new-site localhost \
-        --mariadb-root-password dbpassword \
+        --mariadb-root-password 123 \
         --admin-password admin
 docker-compose restart backend
 ```
