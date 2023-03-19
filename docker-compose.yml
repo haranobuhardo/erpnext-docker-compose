@@ -7,7 +7,6 @@ x-erpnext-backend-image: &erpnext_backend_image
     - sites:/home/frappe/frappe-bench/sites
     - assets:/home/frappe/frappe-bench/sites/assets:ro
     
-name: frappe_docker
 services:
   backend:
     <<: *erpnext_backend_image
